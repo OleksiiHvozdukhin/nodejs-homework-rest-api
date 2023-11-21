@@ -5,9 +5,15 @@ const Joi = require("joi");
 const router = express.Router();
 
 const addSchema = Joi.object({
-  name: Joi.string().required(),
-  email: Joi.string().required(),
-  phone: Joi.string().required(),
+  name: Joi.string()
+    .required()
+    .error(new Error("missing required: Name field")),
+  email: Joi.string()
+    .required()
+    .error(new Error("missing required: Email field")),
+  phone: Joi.string()
+    .required()
+    .error(new Error("missing required: Phone field")),
 });
 
 const HttpError = (status, message) => {
@@ -49,6 +55,7 @@ router.post("/", async (req, res, next) => {
   try {
     const { error } = addSchema.validate(req.body);
     if (error) {
+      console.log(error.message);
       throw HttpError(400, error.message);
     }
     const result = await contacts.addContact(req.body);
@@ -62,10 +69,10 @@ router.delete("/:contactId", async (req, res, next) => {
   try {
     const { contactId } = req.params;
     const result = await contacts.removeContact(contactId);
-    if (!result) throw HttpError(404, "Not found");
-    res.json({
-      message: "Delete success",
-    });
+    if (!result) {
+      throw HttpError(404, "Not found");
+    }
+    res.status(200).json({ message: "Delete success" });
   } catch (error) {
     next(error);
   }
