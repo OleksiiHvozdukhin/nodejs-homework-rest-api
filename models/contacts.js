@@ -4,6 +4,12 @@ const path = require("path");
 
 const contactsPath = path.resolve("models", "contacts.json");
 
+const HttpError = (status, message) => {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+};
+
 const listContacts = async () => {
   const result = await fs.readFile(contactsPath);
   return JSON.parse(result);
@@ -22,7 +28,7 @@ const removeContact = async (contactId) => {
     return null;
   }
   const [result] = contacts.splice(index, 1);
-  await updateContact(contacts);
+  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
   return result;
 };
 
@@ -36,12 +42,15 @@ const addContact = async (body) => {
     id: nanoid(),
   };
   contacts.push(newContacts);
-  await updateContact(contacts);
+  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
   return newContacts;
 };
 
-// const updateContact = async (contactId, body) => {
 const updateContact = async (contactId, body) => {
+  if (!body) {
+    throw HttpError(404, "Not Found");
+  }
+
   const id = String(contactId);
   const contacts = await listContacts();
   const index = contacts.findIndex((item) => item.id === contactId);
