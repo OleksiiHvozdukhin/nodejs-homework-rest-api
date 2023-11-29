@@ -1,6 +1,7 @@
 const express = require("express");
-const contacts = require("../../models/contacts");
+const contacts = require("../../models/contact-controller.js");
 const Joi = require("joi");
+const { isValidObjectId } = require("mongoose");
 
 const router = express.Router();
 
@@ -8,11 +9,10 @@ const addSchema = Joi.object({
   name: Joi.string()
     .required()
     .error(new Error("missing required: Name field")),
-  email: Joi.string()
-    .required()
-    .error(new Error("missing required: Email field")),
-  phone: Joi.string()
-    .required()
+  email: Joi.string().error(new Error("missing required: Email field")),
+  phone: Joi.string().error(new Error("missing required: Phone field")),
+  favorite: Joi.boolean()
+    .default(false)
     .error(new Error("missing required: Phone field")),
 });
 
@@ -36,12 +36,20 @@ router.get("/", async (req, res) => {
 router.get("/:contactId", async (req, res, next) => {
   try {
     const { contactId } = req.params;
+    if (!isValidObjectId(contactId)) {
+      const error = new Error(`${contactId} - is not valid ID!`);
+      error.status = 404;
+      throw error;
+    }
+
     const result = await contacts.getContactById(contactId);
+
     if (!result) {
       const error = new Error("Not found!");
       error.status = 404;
       throw error;
     }
+
     res.json(result);
   } catch (error) {
     const { status = 500, message = "Server error" } = error;
@@ -64,20 +72,6 @@ router.post("/", async (req, res, next) => {
   }
 });
 
-router.delete("/:contactId", async (req, res, next) => {
-  try {
-    const { contactId } = req.params;
-    const result = await contacts.removeContact(contactId);
-    console.log(result);
-    if (!result) {
-      throw HttpError(404, "Not found");
-    }
-    res.status(200).json({ message: "Delete success" });
-  } catch (error) {
-    next(error);
-  }
-});
-
 router.put("/:contactId", async (req, res, next) => {
   try {
     if (Object.keys(req.body).length === 0) {
@@ -89,10 +83,42 @@ router.put("/:contactId", async (req, res, next) => {
     }
     const { contactId } = req.params;
     const result = await contacts.updateContact(contactId, req.body);
+    console.log(result);
     if (!result) {
       throw HttpError(404, "Not Found");
     }
     res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete("/:contactId", async (req, res, next) => {
+  try {
+    const { contactId } = req.params;
+    const result = await contacts.removeContact(contactId);
+    if (!result) {
+      throw HttpError(404, "Not found");
+    }
+    res.status(200).json({ message: "Delete success" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/:contactId/favorite", async (req, res, next) => {
+  try {
+    const { contactId } = req.params;
+
+    if (!Object.prototype.hasOwnProperty.call(req.body, "favorite")) {
+      return res.status(400).json({ message: "missing field favorite" });
+    }
+
+    const result = await contacts.updateStatusContact(contactId, req.body);
+    if (!result) {
+      throw HttpError(404, "Not found");
+    }
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }
