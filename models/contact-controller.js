@@ -16,7 +16,7 @@ const addContact = async (body) => {
 };
 
 const updateContact = async (contactId, body) => {
-  const result = await Contact.findById(contactId, body, {
+  const result = await Contact.findByIdAndUpdate(contactId, body, {
     new: true,
     runValidators: true,
   });

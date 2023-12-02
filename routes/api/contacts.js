@@ -9,8 +9,12 @@ const addSchema = Joi.object({
   name: Joi.string()
     .required()
     .error(new Error("missing required: Name field")),
-  email: Joi.string().error(new Error("missing required: Email field")),
-  phone: Joi.string().error(new Error("missing required: Phone field")),
+  email: Joi.string()
+    .required()
+    .error(new Error("missing required: Email field")),
+  phone: Joi.string()
+    .required()
+    .error(new Error("missing required: Phone field")),
   favorite: Joi.boolean()
     .default(false)
     .error(new Error("missing required: Phone field")),
@@ -38,7 +42,7 @@ router.get("/:contactId", async (req, res, next) => {
     const { contactId } = req.params;
     if (!isValidObjectId(contactId)) {
       const error = new Error(`${contactId} - is not valid ID!`);
-      error.status = 404;
+      error.status = 400;
       throw error;
     }
 
@@ -74,6 +78,12 @@ router.post("/", async (req, res, next) => {
 
 router.put("/:contactId", async (req, res, next) => {
   try {
+    const { contactId } = req.params;
+    if (!isValidObjectId(contactId)) {
+      const error = new Error(`${contactId} - is not valid ID!`);
+      error.status = 400;
+      throw error;
+    }
     if (Object.keys(req.body).length === 0) {
       throw HttpError(400, "missing fields");
     }
@@ -81,9 +91,8 @@ router.put("/:contactId", async (req, res, next) => {
     if (error) {
       throw HttpError(400, error.message);
     }
-    const { contactId } = req.params;
+
     const result = await contacts.updateContact(contactId, req.body);
-    console.log(result);
     if (!result) {
       throw HttpError(404, "Not Found");
     }
@@ -96,6 +105,12 @@ router.put("/:contactId", async (req, res, next) => {
 router.delete("/:contactId", async (req, res, next) => {
   try {
     const { contactId } = req.params;
+    if (!isValidObjectId(contactId)) {
+      const error = new Error(`${contactId} - is not valid ID!`);
+      error.status = 400;
+      throw error;
+    }
+
     const result = await contacts.removeContact(contactId);
     if (!result) {
       throw HttpError(404, "Not found");
@@ -109,6 +124,16 @@ router.delete("/:contactId", async (req, res, next) => {
 router.patch("/:contactId/favorite", async (req, res, next) => {
   try {
     const { contactId } = req.params;
+    if (!isValidObjectId(contactId)) {
+      const error = new Error(`${contactId} - is not valid ID!`);
+      error.status = 400;
+      throw error;
+    }
+
+    const { error } = addSchema.validate(req.body);
+    if (error) {
+      throw HttpError(400, error.message);
+    }
 
     if (!Object.prototype.hasOwnProperty.call(req.body, "favorite")) {
       return res.status(400).json({ message: "missing field favorite" });
