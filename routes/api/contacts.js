@@ -20,6 +20,12 @@ const addSchema = Joi.object({
     .error(new Error("missing required: Phone field")),
 });
 
+const updateFavoriteSchema = Joi.object({
+  favorite: Joi.boolean()
+    .required()
+    .messages({ "any.required": "missing field favorite" }),
+});
+
 const HttpError = (status, message) => {
   const error = new Error(message);
   error.status = status;
@@ -130,7 +136,7 @@ router.patch("/:contactId/favorite", async (req, res, next) => {
       throw error;
     }
 
-    const { error } = addSchema.validate(req.body);
+    const { error } = updateFavoriteSchema.validate(req.body);
     if (error) {
       throw HttpError(400, error.message);
     }
