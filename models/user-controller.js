@@ -63,58 +63,49 @@ const register = async (req, res) => {
 };
 
 const verifyEmail = async (req, res) => {
-  try {
-    const { verificationToken } = req.params;
-    const user = await User.findOne({ verificationToken });
+  const { verificationToken } = req.params;
+  const user = await User.findOne({ verificationToken });
 
-    if (!user) {
-      throw new HttpError(404, "User not found");
-    }
-
-    await User.findByIdAndUpdate(user._id, {
-      verify: true,
-      verificationToken: null,
-    });
-
-    res.json({
-      message: "Verification successful",
-    });
-  } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+  if (!user) {
+    throw HttpError(404, "User not found");
   }
+
+  await User.findByIdAndUpdate(user._id, {
+    verify: true,
+    verificationToken: null,
+  });
+
+  res.json({
+    message: "Verification successful",
+  });
 };
 
 const resendVerifyEmail = async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await User.findOne({ email });
+  const { email } = req.body;
+  const user = await User.findOne({ email });
 
-    if (!user) {
-      throw new HttpError(400, "Email not found");
-    }
-    if (user.verify) {
-      throw new HttpError(400, "Verification has already been passed");
-    }
-
-    const verifyEmail = {
-      to: email,
-      subject: "Verify email",
-      html: `<a target="_blank" href="${sanitizeHtml(
-        BASE_URL
-      )}/users/verify/${sanitizeHtml(
-        user.verificationToken
-      )}">Click to verify email</a>`,
-    };
-
-    await sendEmail(verifyEmail);
-
-    res.json({
-      message: "Verification email sent",
-    });
-  } catch (error) {
-    console.error("Error resending verification email:", error);
-    res.status(error.status || 500).json({ error: error.message });
+  if (!user) {
+    throw HttpError(400, "Email not found");
   }
+  if (user.verify) {
+    throw HttpError(400, "Verification has already been passed");
+  }
+
+  const verifyEmail = {
+    to: email,
+    subject: "Verify email",
+    html: `<a target="_blank" href="${sanitizeHtml(
+      BASE_URL
+    )}/users/verify/${sanitizeHtml(
+      user.verificationToken
+    )}">Click to verify email</a>`,
+  };
+
+  await sendEmail(verifyEmail);
+
+  res.json({
+    message: "Verification email sent",
+  });
 };
 
 const login = async (req, res) => {
